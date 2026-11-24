@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#e6e6e6">
+<meta name="description" data-i18n-content="meta.desc" content="Hides faces in a video or photo with a solid square, right on your phone. Nothing is sent over the internet.">
+<title data-i18n="meta.title">Anonyx · hide faces before you post</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2032%2032%22%3E%3Crect%20width=%2232%22%20height=%2232%22%20fill=%22%23e6e6e6%22/%3E%3Crect%20x=%226%22%20y=%226%22%20width=%2220%22%20height=%2220%22%20fill=%22%230b0b0a%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+<link rel="canonical" href="https://anonyx.pages.dev/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anonyx">
+<meta property="og:title" content="Anonyx · hide faces before you post">
+<meta property="og:description" content="Hides faces in a video or photo with a solid square, right on your phone. Nothing is sent over the internet.">
+<meta property="og:url" content="https://anonyx.pages.dev/">
+<meta property="og:image" content="https://anonyx.pages.dev/icons/mark.png">
+<meta name="twitter:card" content="summary">
+</head>
+<body>
+
+<section id="s-home" class="screen paper">
+  <header class="top"><span class="brand">Anonyx</span></header>
+  <div class="middle">
+    <div class="head">
+      <h1 class="title" data-i18n-html="home.title">Hide<br>the faces.</h1>
+      <p class="tagline" id="footNote" data-i18n="home.tagline.phone">Nothing leaves your phone.</p>
+    </div>
+    <label class="square pick" id="pickLabel" aria-disabled="true">
+      <input type="file" id="file" accept="video/*,image/*,.heic,.heif" multiple disabled>
+      <span class="plus" aria-hidden="true">+</span>
+      <span class="pickText" id="pickText" data-i18n="pick.loading">Loading…</span>
+    </label>
+  </div>
+  <p id="homeError" class="error" hidden></p>
+  <footer class="foot">
+    <label class="fast"><input type="checkbox" id="fast"> <span data-i18n="opt.fast">Fast mode (may miss very small faces)</span></label>
+    <label class="fast"><input type="checkbox" id="quality"> <span data-i18n="opt.quality">Best tracking (slower: smoother, fewer gaps)</span></label>
+    <nav class="links">
+      <a href="how.html" data-i18n="link.how">How it works</a>
+      <a href="verify.html" data-i18n="link.verify">Verify Anonyx</a>
+      <a href="https://github.com/yakuzaax/anonyx" data-i18n="link.source">Source code</a>
+      <a href="legal.html" data-i18n="link.legal">Legal notice</a>
+    </nav>
+    <div class="meta"><span>NovaPulse Studio · NVP suite</span><select id="lang" class="langSel" data-i18n-aria="lang.label" aria-label="Language"></select><span id="version"></span></div>
+  </footer>
+</section>
+
+<section id="s-scan" class="screen paper" hidden>
+  <header class="top"><span class="brand">Anonyx</span></header>
+  <div class="middle">
+    <span class="big" id="scanText">0%</span>
+    <span class="note" id="scanFile"></span>
+    <div class="square frame" id="scanFrame">
+      <span class="tag" data-i18n="scan.frame">Current frame</span>
+      <span class="fill up" id="scanBar"></span>
+    </div>
+  </div>
+  <button class="link" id="scanCancel" type="button" data-i18n="common.cancel">Cancel</button>
+</section>
+
+<section id="s-review" class="screen ink" hidden>
+  <p class="banner" id="hint">Tap a face to hide or unhide its mask.</p>
+  <div class="files" id="files" hidden>
+    <button type="button" id="fPrev" class="step" data-i18n-title="files.prev" title="Previous file">‹</button>
+    <span class="fname" id="fName"></span>
+    <button type="button" id="fDrop" class="tool" data-i18n-title="files.dropTitle" data-i18n="files.drop" title="Leave this file out">Remove</button>
+    <button type="button" id="fNext" class="step" data-i18n-title="files.next" title="Next file">›</button>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="view"></canvas>
+    <button class="link small" id="restoreAll" type="button" hidden></button>
+    <div class="maskBar" id="maskBar" hidden>
+      <button type="button" id="mMinus" data-i18n-title="mask.smaller" title="Smaller">−</button>
+      <button type="button" id="mPlus" data-i18n-title="mask.larger" title="Larger">+</button>
+      <button type="button" id="mFollow" data-i18n-title="follow.start" title="Follow what is under this mask" class="videoOnly">⌖</button>
+      <button type="button" id="mAll" data-i18n-title="mask.whole" title="Whole video" class="videoOnly">∞</button>
+      <button type="button" id="mKeep" data-i18n-title="mask.keepOnly" title="Keep only this face visible, mask all others">◉</button>
+      <button type="button" id="mDelete" title="Remove" class="sep">×</button>
+    </div>
+  </div>
+  <div class="deck">
+    <div class="timeline videoOnly" id="timeline">
+      <button type="button" id="prev" class="step" data-i18n-title="time.prev" title="Previous frame">‹</button>
+      <div class="track"><canvas id="tracks"></canvas><input type="range" id="time" min="0" max="1" step="0.01" value="0" data-i18n-aria="time.pos" aria-label="Position in video"></div>
+      <button type="button" id="next" class="step" data-i18n-title="time.next" title="Next frame">›</button>
+    </div>
+    <div class="tools">
+      <label class="size"><span data-i18n="tool.size">Size</span><input type="range" id="size" min="100" max="200" step="1" value="130"><output id="sizeOut" for="size">130%</output></label>
+      <button type="button" class="tool" id="sizeAll" data-i18n-title="tool.sizeAllTitle" title="Use this size for every file" hidden>Apply to all</button>
+      <button type="button" class="tool" id="splitBtn" aria-pressed="false" data-i18n="tool.compare">Compare</button>
+      <button type="button" class="tool" id="reportBtn" aria-expanded="false" data-i18n="tool.report">Report</button>
+    </div>
+    <div class="row">
+      <button type="button" id="play" class="ctl videoOnly" data-i18n-title="tool.play" title="Play">▶</button>
+      <button type="button" id="styleBtn" class="ctl" data-i18n-title="tool.style" title="Mask style" aria-haspopup="true" aria-expanded="false"><span class="sq"></span></button>
+      <button type="button" id="audioBtn" class="ctl mono videoOnly" data-i18n-title="audio.title" title="Sound">MUTE</button>
+      <button type="button" id="export" class="go" data-i18n="files.export">Export</button>
+    </div>
+    <div class="stylePanel" id="stylePanel" hidden></div>
+    <div class="reportPanel" id="reportPanel" hidden><dl class="reportList" id="reportList"></dl><div class="jumps" id="reportJump"></div></div>
+    <p class="note" id="styleNote" hidden></p>
+    <label class="size" id="blurRow" hidden><span data-i18n="tool.blur">Blur</span><input type="range" id="blur" min="3" max="10" step="1" value="7" data-i18n-aria="tool.blurStrength" aria-label="Blur strength"><output id="blurOut" for="blur">7</output></label>
+    <p class="note videoOnly" id="audioNote"></p>
+    <div class="exportOpts videoOnly">
+      <label><span data-i18n="exp.res">Size</span><select id="expRes"><option value="0" data-i18n="exp.resOrig">Original</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option></select></label>
+      <label><span data-i18n="exp.cap">Limit</span><select id="expCap"><option value="0" data-i18n="exp.capNone">None</option><option value="16" data-i18n="exp.capWa">WhatsApp 16 MB</option><option value="100" data-i18n="exp.capSignal">Signal 100 MB</option></select></label>
+    </div>
+    <p class="note videoOnly" id="expEst"></p>
+    <div class="exportOpts photoOnly" hidden>
+      <label><span data-i18n="exp.photoFmt">Format</span><select id="photoFmt"><option value="jpeg">JPEG</option><option value="png">PNG</option></select></label>
+    </div>
+  </div>
+</section>
+
+<section id="s-export" class="screen paper" hidden>
+  <header class="top"><span class="brand">Anonyx</span></header>
+  <div class="middle">
+    <span class="big" id="exportPct">0%</span>
+    <div class="square frame" id="exportFrame">
+      <span class="fill side" id="exportBar"></span>
+    </div>
+    <span class="strong" data-i18n="exp.keepOn">Keep the screen on.</span>
+    <span class="note" id="exportFile"></span>
+    <span class="note" id="exportText"></span>
+  </div>
+  <button class="link" id="exportCancel" type="button" data-i18n="common.cancel">Cancel</button>
+</section>
+
+<section id="s-done" class="screen paper" hidden>
+  <header class="top"><span class="brand">Anonyx</span></header>
+  <div class="middle">
+    <span class="big" id="doneTitle" data-i18n="done.ready">Ready.</span>
+    <div class="square frame dark">
+      <video id="result" controls playsinline></video>
+      <img id="resultImg" data-i18n-alt="done.alt" alt="Masked photo" hidden>
+    </div>
+    <span class="strong" id="doneCheck" data-i18n="done.watch">Watch all of it before posting.</span>
+    <span class="note" data-i18n="done.note">The mask hides faces, not clothes, tattoos, voice or place. No tool protects 100%.</span>
+    <ul class="results" id="results" hidden></ul>
+    <dl class="reportList" id="doneReport" data-i18n-aria="done.report" aria-label="Scan report"></dl>
+  </div>
+  <div class="bottom">
+    <a class="cta" id="download"><b id="downloadText" data-i18n="done.download">Download</b><span>↓</span></a>
+    <div class="links">
+      <button class="link" id="back" type="button" data-i18n="done.editMasks">Edit masks</button>
+      <button class="link" id="share" type="button" data-i18n="done.share" hidden>Save or share</button>
+      <button class="link" id="restart2" type="button" data-i18n="done.other">Other files</button>
+    </div>
+    <span class="note" id="doneInfo"></span>
+  </div>
+</section>
+
+<p id="fatal" class="error" hidden></p>
+<p id="stats" class="note" hidden></p>
+
+<video id="src" class="src" playsinline muted preload="auto"></video>
+<script type="module" src="app.js"></script>
+</body>
+</html>
